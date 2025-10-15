@@ -39,3 +39,12 @@ export const getRecommendations = async (userId: string, direction: 'sent' | 're
   const { data } = await apiClient.get<RecommendationDetails[]>(`/users/${userId}/recommendations?direction=${direction}`);
   return data;
 };
+
+/**
+ * Удаляет рекомендацию по её ID.
+ * @param recommendationId - ID рекомендации, которую нужно удалить.
+ */
+export const deleteRecommendation = async (recommendationId: number) => {
+  // Бэкенд вернет 204 No Content, поэтому ответа не ждем
+  await apiClient.delete(`/me/recommendations/${recommendationId}`);
+};

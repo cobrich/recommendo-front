@@ -15,6 +15,7 @@ import { UserList } from "@/components/shared/UserList";
 import { toast } from "sonner";
 import { RecommendationDialog } from "@/components/shared/RecommendationDialog";
 import { type RecommendationDetails } from "@/types";
+import { SentRecommendationList } from "@/components/shared/SentRecommendationList";
 
 import {
     getUserById,
@@ -70,6 +71,8 @@ export default function ProfilePage() {
         useState(false);
     const [isEditDialogOpen, setEditDialogOpen] = useState(false);
 
+    // --- ИСПРАВЛЕНИЕ №1: ВСЕ ХУКИ ПЕРЕМЕЩЕНЫ НАВЕРХ ---
+
     const {
         data: user,
         isLoading: isUserLoading,
@@ -106,12 +109,22 @@ export default function ProfilePage() {
         enabled: !!currentUser,
     });
 
-    // Query для получения рекомендаций
-    const { data: recommendations, isLoading: areRecsLoading } = useQuery({
-        queryKey: ["recommendations", userId],
-        queryFn: () => getRecommendations(userId!),
-        enabled: !!userId,
-    });
+    const isMyProfile = currentUser?.user_id.toString() === userId;
+
+    const { data: receivedRecommendations, isLoading: areRecsLoading } =
+        useQuery({
+            queryKey: ["receivedRecommendations", userId],
+            queryFn: () => getRecommendations(userId!, "received"),
+            enabled: !!userId,
+        });
+
+    const { data: sentRecommendations, isLoading: areSentRecsLoading } =
+        useQuery({
+            queryKey: ["sentRecommendations"],
+            queryFn: () =>
+                getRecommendations(currentUser!.user_id.toString(), "sent"),
+            enabled: !!currentUser && isMyProfile,
+        });
 
     const followMutation = useMutation({
         mutationFn: followUser,
@@ -135,6 +148,7 @@ export default function ProfilePage() {
             toast.error(`Не удалось отписаться: ${error.message}`),
     });
 
+    // --- УСЛОВИЯ РЕНДЕРА ТЕПЕРЬ ИДУТ ПОСЛЕ ВСЕХ ХУКОВ ---
     if (isUserLoading)
         return <div className="text-center">Загрузка профиля...</div>;
     if (userError)
@@ -146,7 +160,6 @@ export default function ProfilePage() {
     if (!user)
         return <div className="text-center">Пользователь не найден.</div>;
 
-    const isMyProfile = currentUser?.user_id === user.user_id;
     const isFollowing = myFollowings?.some((f) => f.user_id === user.user_id);
 
     const handleFollow = () => followMutation.mutate(user.user_id);
@@ -213,10 +226,22 @@ export default function ProfilePage() {
                     defaultValue="recommendations"
                     className="max-w-4xl mx-auto w-full"
                 >
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList
+                        className={
+                            isMyProfile
+                                ? "grid w-full grid-cols-4"
+                                : "grid w-full grid-cols-3"
+                        }
+                    >
                         <TabsTrigger value="recommendations">
-                            Рекомендации ({recommendations?.length || 0})
+                            Полученные ({receivedRecommendations?.length || 0})
                         </TabsTrigger>
+                        {isMyProfile && (
+                            <TabsTrigger value="sent_recommendations">
+                                Отправленные ({sentRecommendations?.length || 0}
+                                )
+                            </TabsTrigger>
+                        )}
                         <TabsTrigger value="followers">
                             Подписчики ({followers?.length || 0})
                         </TabsTrigger>
@@ -230,10 +255,26 @@ export default function ProfilePage() {
                             <p>Загрузка...</p>
                         ) : (
                             <RecommendationList
-                                recommendations={recommendations}
+                                recommendations={receivedRecommendations} // <<< ИСПРАВЛЕНИЕ №2
                             />
                         )}
                     </TabsContent>
+
+                    {/* Добавляем контент для новой вкладки */}
+                    {isMyProfile && (
+                        <TabsContent
+                            value="sent_recommendations"
+                            className="mt-4"
+                        >
+                            {areSentRecsLoading ? (
+                                <p>Загрузка...</p>
+                            ) : (
+                                <SentRecommendationList
+                                    recommendations={sentRecommendations}
+                                />
+                            )}
+                        </TabsContent>
+                    )}
 
                     <TabsContent value="followers" className="mt-4">
                         <UserList
