@@ -24,6 +24,7 @@ import {
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
+import { DeleteAccountSection } from "./DeleteAccountSection";
 
 const EditProfileSchema = z.object({
     user_name: z
@@ -130,6 +131,9 @@ export function EditProfileDialog({
                             </DialogFooter>
                         </form>
                     </Form>
+                    <div className="border-t border-border pt-4 mt-4">
+                        <DeleteAccountSection />
+                    </div>
                 </DialogContent>
             </Dialog>
             <ChangePasswordDialog

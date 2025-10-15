@@ -80,3 +80,7 @@ export const changeCurrentUserPassword = async (
     };
     await apiClient.put("/me/password", requestBody);
 };
+
+export const deleteCurrentUser = async () => {
+    await apiClient.delete("/me");
+}
