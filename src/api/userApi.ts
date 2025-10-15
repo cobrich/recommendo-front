@@ -75,8 +75,8 @@ export const changeCurrentUserPassword = async (
     passwords: z.infer<typeof ChangePasswordSchema>
 ) => {
     const requestBody = {
-        currentPassword: passwords.current_password,
-        newPassword: passwords.new_password,
+        current_password: passwords.current_password,
+        new_password: passwords.new_password,
     };
     await apiClient.put("/me/password", requestBody);
 };
