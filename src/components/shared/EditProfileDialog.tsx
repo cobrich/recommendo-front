@@ -8,7 +8,7 @@ import {
     DialogTitle,
 } from "@radix-ui/react-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
@@ -23,6 +23,7 @@ import {
 } from "../ui/form";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { ChangePasswordDialog } from "./ChangePasswordDialog";
 
 const EditProfileSchema = z.object({
     user_name: z
@@ -40,6 +41,7 @@ export function EditProfileDialog({
 }: EditProfileDialogProps) {
     const { user } = useAuth();
     const queryClient = useQueryClient();
+    const [isChangePasswordOpen, setChangePasswordOpen] = useState(false);
 
     const form = useForm<z.infer<typeof EditProfileSchema>>({
         resolver: zodResolver(EditProfileSchema),
@@ -76,48 +78,64 @@ export function EditProfileDialog({
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>Редактировать профиль</DialogTitle>
-                    <DialogDescription>
-                        Внесите изменения в ваш профиль.
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form
-                        onSubmit={form.handleSubmit(onSubmit)}
-                        className="space-y-8 py-4"
-                    >
-                        <FormField
-                            control={form.control}
-                            name="user_name"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Имя пользователя</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder="Ваше имя"
-                                            {...field}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <DialogFooter>
-                            <Button
-                                type="submit"
-                                disabled={updateMutation.isPending}
-                            >
-                                {updateMutation.isPending
-                                    ? "Сохранение..."
-                                    : "Сохранить изменения"}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
+        <>
+            <Dialog open={isOpen} onOpenChange={onOpenChange}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Редактировать профиль</DialogTitle>
+                        <DialogDescription>
+                            Внесите изменения в ваш профиль.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form
+                            onSubmit={form.handleSubmit(onSubmit)}
+                            className="space-y-8 py-4"
+                        >
+                            <FormField
+                                control={form.control}
+                                name="user_name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Имя пользователя</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="Ваше имя"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="space-y-2">
+                                <Button
+                                    type="button"
+                                    variant="link"
+                                    className="p-0 h-auto"
+                                    onClick={() => setChangePasswordOpen(true)}
+                                >
+                                    Change Password
+                                </Button>
+                            </div>
+                            <DialogFooter>
+                                <Button
+                                    type="submit"
+                                    disabled={updateMutation.isPending}
+                                >
+                                    {updateMutation.isPending
+                                        ? "Сохранение..."
+                                        : "Сохранить изменения"}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+            <ChangePasswordDialog
+                isOpen={isChangePasswordOpen}
+                onOpenChange={setChangePasswordOpen}
+            />
+        </>
     );
 }
