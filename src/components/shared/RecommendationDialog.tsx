@@ -43,9 +43,8 @@ export function RecommendationDialog({ isOpen, onOpenChange, recipient }: Recomm
       setSearchTerm("");
       setSelectedMedia(null);
     },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data || "Не удалось отправить рекомендацию";
-      toast.error(errorMessage);
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
