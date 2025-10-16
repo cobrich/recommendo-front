@@ -42,7 +42,7 @@ export function EditProfileDialog({
     isOpen,
     onOpenChange,
 }: EditProfileDialogProps) {
-    const { user } = useAuth();
+    const { user, refetchUser } = useAuth();
     const queryClient = useQueryClient();
     const [isChangePasswordOpen, setChangePasswordOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -81,6 +81,7 @@ export function EditProfileDialog({
         mutationFn: uploadAvatar,
         onSuccess: () => {
             toast.success("Аватар успешно обновлен!");
+            refetchUser();
             queryClient.invalidateQueries({
                 queryKey: ["userProfile", user?.user_id.toString()],
             });
