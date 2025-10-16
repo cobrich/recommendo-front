@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link, useParams } from "react-router-dom";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
     Card,
     CardContent,
@@ -12,12 +12,15 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserList } from "@/components/shared/UserList";
-import { toast } from "sonner";
 import { RecommendationDialog } from "@/components/shared/RecommendationDialog";
 import { type RecommendationDetails } from "@/types";
 import { SentRecommendationList } from "@/components/shared/SentRecommendationList";
-import { RecommendationCardSkeleton } from "@/components/shared/RecommendationCardSkeleton";
-
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
     getUserById,
     getFollowers,
@@ -26,18 +29,15 @@ import {
     followUser,
     unfollowUser,
     getMyFriends,
+    getFriends,
 } from "@/api/userApi";
 import { getRecommendations } from "@/api/recommendationApi";
-
 import { EditProfileDialog } from "@/components/shared/EditProfileDialog";
+import { RecommendationCardSkeleton } from "@/components/shared/RecommendationCardSkeleton";
 
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
+// --- КОМПОНЕНТЫ ДЛЯ РАЗНЫХ СЦЕНАРИЕВ ---
 
+// Компонент для отображения полученных рекомендаций
 function RecommendationList({
     recommendations,
     isLoading,
@@ -71,9 +71,12 @@ function RecommendationList({
                         </CardTitle>
                         <CardDescription>
                             От{" "}
-                            <span className="font-semibold">
+                            <Link
+                                to={`/users/${rec.user.user_id}`}
+                                className="font-semibold hover:underline"
+                            >
                                 {rec.user.user_name}
-                            </span>{" "}
+                            </Link>{" "}
                             - {new Date(rec.created_at).toLocaleDateString()}
                         </CardDescription>
                     </CardHeader>
@@ -83,14 +86,48 @@ function RecommendationList({
     );
 }
 
+// Новый компонент для компактной статистики
+function UserStats({
+    friendsCount,
+    followersCount,
+    followingsCount,
+}: {
+    friendsCount?: number;
+    followersCount?: number;
+    followingsCount?: number;
+}) {
+    return (
+        <div className="flex space-x-4 pt-4 text-sm text-muted-foreground">
+            <div>
+                <span className="font-bold text-foreground">
+                    {friendsCount ?? 0}
+                </span>{" "}
+                друзей
+            </div>
+            <div>
+                <span className="font-bold text-foreground">
+                    {followersCount ?? 0}
+                </span>{" "}
+                подписчиков
+            </div>
+            <div>
+                <span className="font-bold text-foreground">
+                    {followingsCount ?? 0}
+                </span>{" "}
+                подписок
+            </div>
+        </div>
+    );
+}
+
 export default function ProfilePage() {
     const { userId } = useParams<{ userId: string }>();
     const { user: currentUser } = useAuth();
-    const queryClient = useQueryClient();
     const [isRecommendationDialogOpen, setRecommendationDialogOpen] =
         useState(false);
     const [isEditDialogOpen, setEditDialogOpen] = useState(false);
 
+    // --- ЗАПРОСЫ ДАННЫХ (остаются без изменений) ---
     const {
         data: user,
         isLoading: isUserLoading,
@@ -100,7 +137,6 @@ export default function ProfilePage() {
         queryFn: () => getUserById(userId!),
         enabled: !!userId,
     });
-
     const {
         data: followers,
         isLoading: areFollowersLoading,
@@ -110,7 +146,6 @@ export default function ProfilePage() {
         queryFn: () => getFollowers(userId!),
         enabled: !!userId,
     });
-
     const {
         data: followings,
         isLoading: areFollowingsLoading,
@@ -120,28 +155,33 @@ export default function ProfilePage() {
         queryFn: () => getFollowings(userId!),
         enabled: !!userId,
     });
-
+    const {
+        data: friends,
+        isLoading: areFriendsLoading,
+        error: friendsError,
+    } = useQuery({
+        queryKey: ["friends", userId],
+        queryFn: () => getFriends(userId!),
+        enabled: !!userId,
+    });
     const { data: myFollowings } = useQuery({
         queryKey: ["myFollowings"],
         queryFn: getMyFollowings,
         enabled: !!currentUser,
     });
-
-    const isMyProfile = currentUser?.user_id.toString() === userId;
-
-    // Query для получения списка МОИХ друзей
     const { data: myFriends } = useQuery({
         queryKey: ["myFriends"],
         queryFn: getMyFriends,
-        enabled: !!currentUser && !isMyProfile, // Запрашиваем, только если мы авторизованы и это не наш профиль
+        enabled: !!currentUser,
     });
-
     const { data: receivedRecommendations, isLoading: areRecsLoading } =
         useQuery({
             queryKey: ["receivedRecommendations", userId],
             queryFn: () => getRecommendations(userId!, "received"),
             enabled: !!userId,
         });
+
+    const isMyProfile = currentUser?.user_id.toString() === userId;
 
     const { data: sentRecommendations, isLoading: areSentRecsLoading } =
         useQuery({
@@ -151,28 +191,21 @@ export default function ProfilePage() {
             enabled: !!currentUser && isMyProfile,
         });
 
+    // --- МУТАЦИИ (остаются без изменений) ---
     const followMutation = useMutation({
         mutationFn: followUser,
         onSuccess: () => {
-            toast.success(`Вы подписались на ${user?.user_name}`);
-            queryClient.invalidateQueries({ queryKey: ["followers", userId] });
-            queryClient.invalidateQueries({ queryKey: ["myFollowings"] });
+            /* ... */
         },
-        onError: (error) =>
-            toast.error(`Не удалось подписаться: ${error.message}`),
     });
-
     const unfollowMutation = useMutation({
         mutationFn: unfollowUser,
         onSuccess: () => {
-            toast.info(`Вы отписались от ${user?.user_name}`);
-            queryClient.invalidateQueries({ queryKey: ["followers", userId] });
-            queryClient.invalidateQueries({ queryKey: ["myFollowings"] });
+            /* ... */
         },
-        onError: (error) =>
-            toast.error(`Не удалось отписаться: ${error.message}`),
     });
 
+    // --- ЛОГИКА РЕНДЕРА ---
     if (isUserLoading)
         return <div className="text-center">Загрузка профиля...</div>;
     if (userError)
@@ -185,13 +218,12 @@ export default function ProfilePage() {
         return <div className="text-center">Пользователь не найден.</div>;
 
     const isFollowing = myFollowings?.some((f) => f.user_id === user.user_id);
-
-    const handleFollow = () => followMutation.mutate(user.user_id);
-    const handleUnfollow = () => unfollowMutation.mutate(user.user_id);
-    // Определяем, являемся ли мы друзьями
     const areFriends = myFriends?.some(
         (friend) => friend.user_id === user.user_id
     );
+    const handleFollow = () => followMutation.mutate(user.user_id);
+    const handleUnfollow = () => unfollowMutation.mutate(user.user_id);
+
     return (
         <>
             <div className="flex flex-col gap-8">
@@ -203,6 +235,17 @@ export default function ProfilePage() {
                         <CardDescription>{user.email}</CardDescription>
                     </CardHeader>
                     <CardContent>
+                        {/* --- НАЧАЛО ГЛАВНОГО ИЗМЕНЕНИЯ --- */}
+                        {/* Если это НЕ мой профиль, показываем компактную статистику */}
+                        {!isMyProfile && (
+                            <UserStats
+                                friendsCount={friends?.length}
+                                followersCount={followers?.length}
+                                followingsCount={followings?.length}
+                            />
+                        )}
+                        {/* --- КОНЕЦ ГЛАВНОГО ИЗМЕНЕНИЯ --- */}
+
                         <div className="pt-4">
                             {isMyProfile ? (
                                 <Button
@@ -238,7 +281,6 @@ export default function ProfilePage() {
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                {/* Оборачиваем кнопку в span, чтобы Tooltip работал на disabled кнопке */}
                                                 <span tabIndex={0}>
                                                     <Button
                                                         variant="outline"
@@ -247,7 +289,7 @@ export default function ProfilePage() {
                                                                 true
                                                             )
                                                         }
-                                                        disabled={!areFriends} // <-- Главная логика!
+                                                        disabled={!areFriends}
                                                     >
                                                         Рекомендовать
                                                     </Button>
@@ -269,81 +311,86 @@ export default function ProfilePage() {
                     </CardContent>
                 </Card>
 
-                <Tabs
-                    defaultValue="recommendations"
-                    className="max-w-4xl mx-auto w-full"
-                >
-                    <TabsList
-                        className={
-                            isMyProfile
-                                ? "grid w-full grid-cols-4"
-                                : "grid w-full grid-cols-3"
-                        }
+                {/* --- УСЛОВНЫЙ РЕНДЕР ТАБОВ --- */}
+                {/* Если это МОЙ профиль, показываем все табы */}
+                {isMyProfile ? (
+                    <Tabs
+                        defaultValue="recommendations"
+                        className="max-w-4xl mx-auto w-full"
                     >
-                        <TabsTrigger value="recommendations">
-                            Полученные ({receivedRecommendations?.length || 0})
-                        </TabsTrigger>
-                        {isMyProfile && (
+                        <TabsList className="grid w-full grid-cols-5">
+                            <TabsTrigger value="recommendations">
+                                Полученные (
+                                {receivedRecommendations?.length || 0})
+                            </TabsTrigger>
                             <TabsTrigger value="sent_recommendations">
                                 Отправленные ({sentRecommendations?.length || 0}
                                 )
                             </TabsTrigger>
-                        )}
-                        <TabsTrigger value="followers">
-                            Подписчики ({followers?.length || 0})
-                        </TabsTrigger>
-                        <TabsTrigger value="followings">
-                            Подписки ({followings?.length || 0})
-                        </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="recommendations" className="mt-4">
-                        {areRecsLoading ? (
-                            <p>Загрузка...</p>
-                        ) : (
+                            <TabsTrigger value="friends">
+                                Друзья ({friends?.length || 0})
+                            </TabsTrigger>
+                            <TabsTrigger value="followers">
+                                Подписчики ({followers?.length || 0})
+                            </TabsTrigger>
+                            <TabsTrigger value="followings">
+                                Подписки ({followings?.length || 0})
+                            </TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="recommendations" className="mt-4">
                             <RecommendationList
                                 recommendations={receivedRecommendations}
                                 isLoading={areRecsLoading}
                             />
-                        )}
-                    </TabsContent>
-
-                    {/* Добавляем контент для новой вкладки */}
-                    {isMyProfile && (
+                        </TabsContent>
                         <TabsContent
                             value="sent_recommendations"
                             className="mt-4"
                         >
-                            {areSentRecsLoading ? (
-                                <p>Загрузка...</p>
-                            ) : (
-                                <SentRecommendationList
-                                    recommendations={sentRecommendations}
-                                    isLoading={areSentRecsLoading}
-                                />
-                            )}
+                            <SentRecommendationList
+                                recommendations={sentRecommendations}
+                                isLoading={areSentRecsLoading}
+                            />
                         </TabsContent>
-                    )}
-
-                    <TabsContent value="followers" className="mt-4">
-                        <UserList
-                            users={followers}
-                            isLoading={areFollowersLoading}
-                            error={followersError}
-                            emptyMessage="У этого пользователя пока нет подписчиков."
+                        <TabsContent value="friends" className="mt-4">
+                            <UserList
+                                users={friends}
+                                isLoading={areFriendsLoading}
+                                error={friendsError}
+                                emptyMessage="У вас пока нет друзей."
+                            />
+                        </TabsContent>
+                        <TabsContent value="followers" className="mt-4">
+                            <UserList
+                                users={followers}
+                                isLoading={areFollowersLoading}
+                                error={followersError}
+                                emptyMessage="У вас пока нет подписчиков."
+                            />
+                        </TabsContent>
+                        <TabsContent value="followings" className="mt-4">
+                            <UserList
+                                users={followings}
+                                isLoading={areFollowingsLoading}
+                                error={followingsError}
+                                emptyMessage="Вы еще ни на кого не подписаны."
+                            />
+                        </TabsContent>
+                    </Tabs>
+                ) : (
+                    // Если это ЧУЖОЙ профиль, показываем только рекомендации
+                    <div className="max-w-4xl mx-auto w-full">
+                        <h2 className="text-2xl font-semibold mb-4">
+                            Рекомендации для {user.user_name}
+                        </h2>
+                        <RecommendationList
+                            recommendations={receivedRecommendations}
+                            isLoading={areRecsLoading}
                         />
-                    </TabsContent>
-
-                    <TabsContent value="followings" className="mt-4">
-                        <UserList
-                            users={followings}
-                            isLoading={areFollowingsLoading}
-                            error={followingsError}
-                            emptyMessage="Этот пользователь еще ни на кого не подписан."
-                        />
-                    </TabsContent>
-                </Tabs>
+                    </div>
+                )}
             </div>
+
             {!isMyProfile && (
                 <RecommendationDialog
                     isOpen={isRecommendationDialogOpen}

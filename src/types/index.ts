@@ -33,6 +33,8 @@ export interface MediaItem {
     year: number;
     author: string;
     created_at: string;
+    recommendation_count: number;
+    external_link?: string;
 }
 
 // На основе models/recommendation_details.go

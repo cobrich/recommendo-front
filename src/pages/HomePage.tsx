@@ -1,80 +1,46 @@
-import { useQuery } from "@tanstack/react-query";
-import { getFeed } from "@/api/feedApi";
-import { type FeedItem } from "@/types";
-import { RecommendationFeedItem } from "@/components/shared/RecommendationFeedItem";
-import { FollowFeedItem } from "@/components/shared/FollowFeedItem";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ActivityFeed } from "@/components/shared/ActivityFeed";
 import { SuggestedUsers } from "@/components/shared/SuggestedUsers";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { CenterContent } from "@/components/shared/CenterContent";
 
-// Скелетон для ленты
-function FeedSkeleton() {
+// Временные заглушки для левой и центральной колонок
+function LeftSidebar() {
     return (
-        <div className="space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="p-4 border rounded-lg">
-                    <Skeleton className="h-4 w-3/4 mb-2" />
-                    <Skeleton className="h-3 w-1/2" />
-                </div>
-            ))}
-        </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>Виджет</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-sm text-muted-foreground">
+                    Здесь будет квиз или полезная информация.
+                </p>
+            </CardContent>
+        </Card>
     );
 }
 
 export default function HomePage() {
-    const {
-        data: feedItems,
-        isLoading,
-        error,
-    } = useQuery({
-        queryKey: ["feed"],
-        queryFn: getFeed,
-    });
-
-    const renderFeedItem = (item: FeedItem) => {
-        switch (item.type) {
-            case "recommendation":
-                return (
-                    <RecommendationFeedItem
-                        key={`${item.type}-${item.created_at}`}
-                        item={item}
-                    />
-                );
-            case "follow":
-                return (
-                    <FollowFeedItem
-                        key={`${item.type}-${item.created_at}`}
-                        item={item}
-                    />
-                );
-            default:
-                return null;
-        }
-    };
-
     return (
-        <div className="max-w-2xl mx-auto">
-            <h1 className="text-3xl font-bold mb-6">Лента активности</h1>
+        // Создаем трехколоночный макет, который на мобильных устройствах складывается в одну колонку
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Левая колонка (видна на больших экранах) */}
+            <aside className="hidden lg:block lg:col-span-3">
+                <LeftSidebar />
+            </aside>
 
-            {isLoading && <FeedSkeleton />}
-            {error && (
-                <div className="text-center text-red-500">
-                    Не удалось загрузить ленту: {error.message}
+            {/* Центральная колонка */}
+            <main className="lg:col-span-6">
+                <CenterContent />
+            </main>
+
+            {/* Правая колонка */}
+            <aside className="lg:col-span-3 space-y-8">
+                <SuggestedUsers />
+                <div>
+                    <h3 className="font-semibold mb-4">Лента активности</h3>
+                    <ActivityFeed />
                 </div>
-            )}
-            {!isLoading && feedItems?.length === 0 && (
-                <div className="space-y-8 text-center">
-                    <p className="text-muted-foreground">
-                        Ваша лента пока пуста. Подпишитесь на кого-нибудь, чтобы
-                        видеть их активность.
-                    </p>
-                    <div className="text-left">
-                        <SuggestedUsers />
-                    </div>
-                </div>
-            )}
-            {!isLoading && feedItems && (
-                <div className="space-y-4">{feedItems.map(renderFeedItem)}</div>
-            )}
+            </aside>
         </div>
     );
 }

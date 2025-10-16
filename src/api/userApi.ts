@@ -91,3 +91,12 @@ export const getMyFriends = async () => {
     );
     return data.data;
 };
+
+/**
+ * Получает список друзей для указанного пользователя.
+ * @param userId - ID пользователя, чьих друзей нужно получить.
+ */
+export const getFriends = async (userId: string) => {
+  const { data } = await apiClient.get<PaginatedResponse<User>>(`/users/${userId}/friends`);
+  return data.data;
+};
