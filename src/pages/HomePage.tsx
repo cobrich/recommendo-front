@@ -1,43 +1,80 @@
-import apiClient from "@/api";
-import { type PaginatedResponse, type User } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "react-router-dom";
-import { UserListSkeleton } from "@/components/shared/UserListSkeleton";
+import { getFeed } from "@/api/feedApi";
+import { type FeedItem } from "@/types";
+import { RecommendationFeedItem } from "@/components/shared/RecommendationFeedItem";
+import { FollowFeedItem } from "@/components/shared/FollowFeedItem";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SuggestedUsers } from "@/components/shared/SuggestedUsers";
 
-// Функция для получения данных с бэкенда
-const fetchUsers = async () => {
-    const { data } = await apiClient.get<PaginatedResponse<User>>('/users');
-    return data.data; // Возвращаем только массив пользователей
+// Скелетон для ленты
+function FeedSkeleton() {
+    return (
+        <div className="space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-4 border rounded-lg">
+                    <Skeleton className="h-4 w-3/4 mb-2" />
+                    <Skeleton className="h-3 w-1/2" />
+                </div>
+            ))}
+        </div>
+    );
 }
 
 export default function HomePage() {
-    // Tanstack Query будет управлять состоянием запроса за нас
-    const { data: users, isLoading, error } = useQuery({
-        queryKey: ['allUsers'], // Уникальный ключ для кэширования этого запроса
-        queryFn: fetchUsers    // Функция, которая выполняет запрос
+    const {
+        data: feedItems,
+        isLoading,
+        error,
+    } = useQuery({
+        queryKey: ["feed"],
+        queryFn: getFeed,
     });
 
-    if (isLoading) return <UserListSkeleton />;
-    if(error) return <div className="text-center text-red-500">Ошибка при загрузке: {error.message}</div>
+    const renderFeedItem = (item: FeedItem) => {
+        switch (item.type) {
+            case "recommendation":
+                return (
+                    <RecommendationFeedItem
+                        key={`${item.type}-${item.created_at}`}
+                        item={item}
+                    />
+                );
+            case "follow":
+                return (
+                    <FollowFeedItem
+                        key={`${item.type}-${item.created_at}`}
+                        item={item}
+                    />
+                );
+            default:
+                return null;
+        }
+    };
 
     return (
-        <div>
-            <h1 className="text-3xl font-bold mb-6">Все пользователи</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {users?.map(user => (
-                    <Link to={`/users/${user.user_id}`} key={user.user_id}>
-                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                            <CardHeader>
-                                <CardTitle>{user.user_name}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm text-muted-foreground">{user.email}</p>
-                            </CardContent>
-                        </Card>
-                    </Link>
-                ))}
-            </div>
+        <div className="max-w-2xl mx-auto">
+            <h1 className="text-3xl font-bold mb-6">Лента активности</h1>
+
+            {isLoading && <FeedSkeleton />}
+            {error && (
+                <div className="text-center text-red-500">
+                    Не удалось загрузить ленту: {error.message}
+                </div>
+            )}
+            {!isLoading && feedItems?.length === 0 && (
+                <div className="space-y-8 text-center">
+                    <p className="text-muted-foreground">
+                        Ваша лента пока пуста. Подпишитесь на кого-нибудь, чтобы
+                        видеть их активность.
+                    </p>
+                    <div className="text-left">
+                        <SuggestedUsers />
+                    </div>
+                </div>
+            )}
+            {!isLoading && feedItems && (
+                <div className="space-y-4">{feedItems.map(renderFeedItem)}</div>
+            )}
         </div>
     );
 }
