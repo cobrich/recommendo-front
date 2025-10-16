@@ -78,3 +78,10 @@ export interface FeedItem {
     actor: User;
     details: RecommendationEventDetails | FollowEventDetails;
 }
+
+export interface AppComment {
+    comment_id: number;
+    content: string;
+    created_at: string;
+    user: User;
+}

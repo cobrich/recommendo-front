@@ -14,9 +14,15 @@ interface MediaPostProps {
     media: MediaItem;
     onRecommend: (media: MediaItem) => void;
     onRate: (media: MediaItem) => void;
+    onComment: (media: MediaItem) => void;
 }
 
-export function MediaPost({ media, onRecommend, onRate }: MediaPostProps) {
+export function MediaPost({
+    media,
+    onRecommend,
+    onRate,
+    onComment,
+}: MediaPostProps) {
     return (
         <Card>
             <CardHeader>
@@ -50,7 +56,11 @@ export function MediaPost({ media, onRecommend, onRate }: MediaPostProps) {
                     >
                         <Star className="h-4 w-4 mr-1.5" /> Rate
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onComment(media)}
+                    >
                         <MessageCircle className="h-4 w-4 mr-1.5" /> Comment
                     </Button>
                     <Button size="sm" onClick={() => onRecommend(media)}>

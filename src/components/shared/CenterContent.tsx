@@ -6,10 +6,12 @@ import { MediaPostSkeleton } from "./MediaPostSkeleton";
 import { RecommendationDialog } from "./RecommendationDialog";
 import { type MediaItem } from "@/types";
 import { RatingDialog } from "./RatingDialog";
+import { CommentsDialog } from "./CommentsDialog";
 
 export function CenterContent() {
     const [isRecDialogOpen, setRecDialogOpen] = useState(false);
     const [isRateDialogOpen, setRateDialogOpen] = useState(false);
+    const [isCommentsDialogOpen, setCommentsDialogOpen] = useState(false);
     const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
 
     const {
@@ -29,6 +31,11 @@ export function CenterContent() {
     const handleRateClick = (media: MediaItem) => {
         setSelectedMedia(media);
         setRateDialogOpen(true);
+    };
+
+    const handleCommentClick = (media: MediaItem) => {
+        setSelectedMedia(media);
+        setCommentsDialogOpen(true);
     };
 
     if (isLoading) {
@@ -54,6 +61,7 @@ export function CenterContent() {
                         media={media}
                         onRecommend={handleRecommendClick}
                         onRate={handleRateClick}
+                        onComment={handleCommentClick}
                     />
                 ))}
             </div>
@@ -67,6 +75,11 @@ export function CenterContent() {
                     <RatingDialog
                         isOpen={isRateDialogOpen}
                         onOpenChange={setRateDialogOpen}
+                        media={selectedMedia}
+                    />
+                    <CommentsDialog
+                        isOpen={isCommentsDialogOpen}
+                        onOpenChange={setCommentsDialogOpen}
                         media={selectedMedia}
                     />
                 </>
