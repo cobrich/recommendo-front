@@ -10,7 +10,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Star, ThumbsUp } from "lucide-react";
 
-export function MediaPost({ media }: { media: MediaItem }) {
+interface MediaPostProps {
+    media: MediaItem;
+    onRecommend: (media: MediaItem) => void;
+    onRate: (media: MediaItem) => void;
+}
+
+export function MediaPost({ media, onRecommend, onRate }: MediaPostProps) {
     return (
         <Card>
             <CardHeader>
@@ -33,13 +39,23 @@ export function MediaPost({ media }: { media: MediaItem }) {
                     {media.recommendation_count}
                 </div>
                 <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
-                        <Star className="h-4 w-4 mr-1.5" /> Оценить
+                    <div className="flex items-center text-sm text-muted-foreground">
+                        <Star className="h-4 w-4 mr-1.5 text-yellow-400" />
+                        {media.avg_rating.toFixed(1)} ({media.rating_count})
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onRate(media)}
+                    >
+                        <Star className="h-4 w-4 mr-1.5" /> Rate
                     </Button>
                     <Button variant="outline" size="sm">
-                        <MessageCircle className="h-4 w-4 mr-1.5" /> Комментарии
+                        <MessageCircle className="h-4 w-4 mr-1.5" /> Comment
                     </Button>
-                    <Button size="sm">Рекомендовать</Button>
+                    <Button size="sm" onClick={() => onRecommend(media)}>
+                        Recommend
+                    </Button>
                 </div>
             </CardFooter>
         </Card>
