@@ -13,10 +13,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { createRecommendation, searchMedia } from "@/api/recommendationApi";
+import {
+    createRecommendation,
+    searchMedia,
+    getRecommendations,
+} from "@/api/recommendationApi";
 import { getMyFriends } from "@/api/userApi";
 import { type MediaItem, type User } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useAuth } from "@/hooks/useAuth";
+import { AxiosError } from "axios";
 
 interface RecommendationDialogProps {
     isOpen: boolean;
@@ -42,6 +48,8 @@ export function RecommendationDialog({
 
     const queryClient = useQueryClient();
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
+    // Get current user
+    const { user: currentUser } = useAuth();
 
     // Сбрасываем состояние при закрытии/открытии окна
     useEffect(() => {
@@ -56,32 +64,58 @@ export function RecommendationDialog({
     const { data: searchResults, isLoading: isSearching } = useQuery({
         queryKey: ["mediaSearch", debouncedSearchTerm],
         queryFn: () => searchMedia(debouncedSearchTerm),
-        enabled: !media && debouncedSearchTerm.length > 2, // Искать медиа, только если оно не передано
+        enabled: !media && debouncedSearchTerm.length > 2, // Search media, only if its don't given
     });
 
     const { data: friends, isLoading: isLoadingFriends } = useQuery({
         queryKey: ["myFriends"],
         queryFn: getMyFriends,
-        enabled: isOpen && !recipient, // Загружать друзей, только если получатель не передан
+        enabled: isOpen && !recipient, // Load friends, if only if the reciever don't given
+    });
+
+    // List of the recommendations which is already sended
+    const { data: sentRecommendations } = useQuery({
+        queryKey: ["sentRecommendations"],
+        queryFn: () =>
+            getRecommendations(currentUser!.user_id.toString(), "sent"),
+        enabled: !!currentUser && isOpen, // Request only when dialog is open
     });
 
     // --- Мутация ---
     const recommendationMutation = useMutation({
         mutationFn: createRecommendation,
         onSuccess: () => {
-            toast.success(`Рекомендация успешно отправлена!`);
+            toast.success(`Recommendation send successfully!`);
             if (selectedFriend) {
                 queryClient.invalidateQueries({
                     queryKey: [
-                        "recommendations",
+                        "receivedRecommendations",
                         selectedFriend.user_id.toString(),
                     ],
                 });
             }
             onOpenChange(false);
         },
-        onError: (error) => {
-            toast.error(error.message);
+        onError: (error: AxiosError) => {
+            let errorMessage = "Failed send recommendation!";
+
+            // AxiosError имеет свойство `response`, которое содержит данные ответа сервера
+            if (error.response) {
+                if (error.response.status === 409) {
+                    errorMessage = "You are already recommend it to this friend.";
+                } else if (
+                    typeof error.response.data === "string" &&
+                    error.response.data
+                ) {
+                    // Если data - это строка (как в случае с 500 ошибкой)
+                    errorMessage = error.response.data;
+                }
+            } else {
+                // Если нет `error.response`, значит, проблема с сетью или что-то еще
+                errorMessage = error.message;
+            }
+
+            toast.error(errorMessage);
         },
     });
 
@@ -95,9 +129,9 @@ export function RecommendationDialog({
     };
 
     const title = recipient
-        ? `Рекомендовать для ${recipient.user_name}`
+        ? `Recommend for${recipient.user_name}`
         : media
-        ? `Рекомендовать "${media.name}"`
+        ? `Recommend "${media.name}"`
         : "Новая рекомендация";
 
     return (
@@ -123,22 +157,46 @@ export function RecommendationDialog({
                                     {isSearching && (
                                         <p className="p-2">Поиск...</p>
                                     )}
-                                    {searchResults?.map((item) => (
-                                        <div
-                                            key={item.media_id}
-                                            className={`p-2 rounded cursor-pointer hover:bg-accent ${
-                                                selectedMedia?.media_id ===
-                                                item.media_id
-                                                    ? "bg-accent font-semibold"
-                                                    : ""
-                                            }`}
-                                            onClick={() =>
-                                                setSelectedMedia(item)
-                                            }
-                                        >
-                                            {item.name} ({item.year})
-                                        </div>
-                                    ))}
+                                    {searchResults?.map((item) => {
+                                        // --- ЛОГИКА ПРОВЕРКИ ---
+                                        // Проверяем, было ли это медиа уже порекомендовано ВЫБРАННОМУ другу
+                                        const isAlreadyRecommended =
+                                            sentRecommendations?.some(
+                                                (rec) =>
+                                                    rec.media.media_id ===
+                                                        item.media_id &&
+                                                    rec.user.user_id ===
+                                                        selectedFriend?.user_id
+                                            );
+
+                                        return (
+                                            <div
+                                                key={item.media_id}
+                                                className={`p-2 rounded ${
+                                                    isAlreadyRecommended
+                                                        ? "opacity-50 cursor-not-allowed" // Стиль для неактивного
+                                                        : "cursor-pointer hover:bg-accent" // Стиль для активного
+                                                } ${
+                                                    selectedMedia?.media_id ===
+                                                    item.media_id
+                                                        ? "bg-accent font-semibold"
+                                                        : ""
+                                                }`}
+                                                onClick={() => {
+                                                    if (!isAlreadyRecommended) {
+                                                        setSelectedMedia(item);
+                                                    }
+                                                }}
+                                            >
+                                                {item.name} ({item.year})
+                                                {isAlreadyRecommended && (
+                                                    <span className="text-xs text-muted-foreground ml-2">
+                                                        (уже порекомендовано)
+                                                    </span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </ScrollArea>
                         </div>
