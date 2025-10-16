@@ -84,3 +84,10 @@ export const changeCurrentUserPassword = async (
 export const deleteCurrentUser = async () => {
     await apiClient.delete("/me");
 }
+
+export const getMyFriends = async () => {
+    const { data } = await apiClient.get<PaginatedResponse<User>>(
+        "/me/friends"
+    );
+    return data.data;
+};

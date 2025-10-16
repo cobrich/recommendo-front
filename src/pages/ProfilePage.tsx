@@ -25,10 +25,18 @@ import {
     getMyFollowings,
     followUser,
     unfollowUser,
+    getMyFriends,
 } from "@/api/userApi";
 import { getRecommendations } from "@/api/recommendationApi";
 
 import { EditProfileDialog } from "@/components/shared/EditProfileDialog";
+
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 function RecommendationList({
     recommendations,
@@ -121,6 +129,13 @@ export default function ProfilePage() {
 
     const isMyProfile = currentUser?.user_id.toString() === userId;
 
+    // Query для получения списка МОИХ друзей
+    const { data: myFriends } = useQuery({
+        queryKey: ["myFriends"],
+        queryFn: getMyFriends,
+        enabled: !!currentUser && !isMyProfile, // Запрашиваем, только если мы авторизованы и это не наш профиль
+    });
+
     const { data: receivedRecommendations, isLoading: areRecsLoading } =
         useQuery({
             queryKey: ["receivedRecommendations", userId],
@@ -173,7 +188,10 @@ export default function ProfilePage() {
 
     const handleFollow = () => followMutation.mutate(user.user_id);
     const handleUnfollow = () => unfollowMutation.mutate(user.user_id);
-
+    // Определяем, являемся ли мы друзьями
+    const areFriends = myFriends?.some(
+        (friend) => friend.user_id === user.user_id
+    );
     return (
         <>
             <div className="flex flex-col gap-8">
@@ -217,14 +235,34 @@ export default function ProfilePage() {
                                                 : "Подписаться"}
                                         </Button>
                                     )}
-                                    <Button
-                                        variant="outline"
-                                        onClick={() =>
-                                            setRecommendationDialogOpen(true)
-                                        }
-                                    >
-                                        Рекомендовать
-                                    </Button>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                {/* Оборачиваем кнопку в span, чтобы Tooltip работал на disabled кнопке */}
+                                                <span tabIndex={0}>
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() =>
+                                                            setRecommendationDialogOpen(
+                                                                true
+                                                            )
+                                                        }
+                                                        disabled={!areFriends} // <-- Главная логика!
+                                                    >
+                                                        Рекомендовать
+                                                    </Button>
+                                                </span>
+                                            </TooltipTrigger>
+                                            {!areFriends && (
+                                                <TooltipContent>
+                                                    <p>
+                                                        Вы можете рекомендовать
+                                                        только друзьям.
+                                                    </p>
+                                                </TooltipContent>
+                                            )}
+                                        </Tooltip>
+                                    </TooltipProvider>
                                 </div>
                             )}
                         </div>
