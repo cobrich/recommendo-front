@@ -224,6 +224,7 @@ export default function ProfilePage() {
             // 5. Делаем финальную синхронизацию с сервером, чтобы убедиться, что все консистентно
             queryClient.invalidateQueries({ queryKey: ["myFollowings"] });
             queryClient.invalidateQueries({ queryKey: ["followers", userId] });
+            queryClient.invalidateQueries({ queryKey: ["myFriends"] });
         },
     });
 
@@ -254,6 +255,7 @@ export default function ProfilePage() {
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ["myFollowings"] });
             queryClient.invalidateQueries({ queryKey: ["followers", userId] });
+            queryClient.invalidateQueries({ queryKey: ["myFriends"] });
         },
     });
 
