@@ -3,6 +3,7 @@ import { type PaginatedResponse, type User } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import { UserListSkeleton } from "@/components/shared/UserListSkeleton";
 
 // Функция для получения данных с бэкенда
 const fetchUsers = async () => {
@@ -17,7 +18,7 @@ export default function HomePage() {
         queryFn: fetchUsers    // Функция, которая выполняет запрос
     });
 
-    if(isLoading) return <div className="text-center">Загрузка пользователей...</div>
+    if (isLoading) return <UserListSkeleton />;
     if(error) return <div className="text-center text-red-500">Ошибка при загрузке: {error.message}</div>
 
     return (

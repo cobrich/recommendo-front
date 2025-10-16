@@ -5,13 +5,16 @@ import { toast } from "sonner";
 import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
+import { RecommendationCardSkeleton } from "./RecommendationCardSkeleton";
 
 interface SentRecommendationListProps {
     recommendations?: RecommendationDetails[];
+    isLoading: boolean;
 }
 
 export function SentRecommendationList({
     recommendations,
+    isLoading,
 }: SentRecommendationListProps) {
     const queryClient = useQueryClient();
 
@@ -28,6 +31,15 @@ export function SentRecommendationList({
         },
     });
 
+    if (isLoading) {
+        return (
+            <div className="space-y-4">
+                {Array.from({ length: 3 }).map((_, index) => (
+                    <RecommendationCardSkeleton key={index} />
+                ))}
+            </div>
+        );
+    }
     if (!recommendations || recommendations.length === 0) {
         return (
             <p className="text-sm text-muted-foreground text-center py-4">

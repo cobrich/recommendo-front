@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { RecommendationDialog } from "@/components/shared/RecommendationDialog";
 import { type RecommendationDetails } from "@/types";
 import { SentRecommendationList } from "@/components/shared/SentRecommendationList";
+import { RecommendationCardSkeleton } from "@/components/shared/RecommendationCardSkeleton";
 
 import {
     getUserById,
@@ -31,9 +32,20 @@ import { EditProfileDialog } from "@/components/shared/EditProfileDialog";
 
 function RecommendationList({
     recommendations,
+    isLoading,
 }: {
     recommendations?: RecommendationDetails[];
+    isLoading: boolean;
 }) {
+    if (isLoading) {
+        return (
+            <div className="space-y-4">
+                {Array.from({ length: 3 }).map((_, index) => (
+                    <RecommendationCardSkeleton key={index} />
+                ))}
+            </div>
+        );
+    }
     if (!recommendations || recommendations.length === 0) {
         return (
             <p className="text-sm text-muted-foreground text-center py-4">
@@ -70,8 +82,6 @@ export default function ProfilePage() {
     const [isRecommendationDialogOpen, setRecommendationDialogOpen] =
         useState(false);
     const [isEditDialogOpen, setEditDialogOpen] = useState(false);
-
-    // --- ИСПРАВЛЕНИЕ №1: ВСЕ ХУКИ ПЕРЕМЕЩЕНЫ НАВЕРХ ---
 
     const {
         data: user,
@@ -148,7 +158,6 @@ export default function ProfilePage() {
             toast.error(`Не удалось отписаться: ${error.message}`),
     });
 
-    // --- УСЛОВИЯ РЕНДЕРА ТЕПЕРЬ ИДУТ ПОСЛЕ ВСЕХ ХУКОВ ---
     if (isUserLoading)
         return <div className="text-center">Загрузка профиля...</div>;
     if (userError)
@@ -255,7 +264,8 @@ export default function ProfilePage() {
                             <p>Загрузка...</p>
                         ) : (
                             <RecommendationList
-                                recommendations={receivedRecommendations} // <<< ИСПРАВЛЕНИЕ №2
+                                recommendations={receivedRecommendations}
+                                isLoading={areRecsLoading}
                             />
                         )}
                     </TabsContent>
@@ -271,6 +281,7 @@ export default function ProfilePage() {
                             ) : (
                                 <SentRecommendationList
                                     recommendations={sentRecommendations}
+                                    isLoading={areSentRecsLoading}
                                 />
                             )}
                         </TabsContent>
