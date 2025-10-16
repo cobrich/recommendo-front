@@ -117,3 +117,13 @@ export const uploadAvatar = async (file: File) => {
 export const deleteCurrentUserAvatar = async () => {
     await apiClient.delete("/me/avatar");
 };
+
+export const getNewestUsers = async () => {
+    const { data } = await apiClient.get<User[]>("/users/newest");
+    return data;
+};
+
+export const getTopRecommenders = async () => {
+    const { data } = await apiClient.get<User[]>("/users/top-recommenders");
+    return data;
+};

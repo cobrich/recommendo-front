@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/hooks/useTheme";
 
-
 export function Header() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
@@ -23,7 +22,14 @@ export function Header() {
                 <Link to="/" className="mr-6 flex items-center space-x-2">
                     <span className="font-bold">Recommendo</span>
                 </Link>
-
+                <nav className="flex items-center space-x-6 text-sm font-medium ml-6">
+                    <Link
+                        to="/community"
+                        className="transition-colors hover:text-foreground/80 text-foreground/60"
+                    >
+                        Сообщество
+                    </Link>
+                </nav>
                 <div className="flex flex-1 items-center justify-end space-x-4">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
