@@ -9,7 +9,7 @@ import {
     CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Star, ThumbsUp } from "lucide-react";
+import { MessageCircle, Star, Send } from "lucide-react";
 
 interface MediaPostProps {
     media: MediaItem;
@@ -17,6 +17,13 @@ interface MediaPostProps {
     onRate: (media: MediaItem) => void;
     onComment: (media: MediaItem) => void;
 }
+
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function MediaPost({
     media,
@@ -46,35 +53,52 @@ export function MediaPost({
                 </p>
             </CardContent>
             <CardFooter className="flex justify-between items-center">
-                <div className="flex items-center text-sm text-muted-foreground">
-                    <ThumbsUp className="h-4 w-4 mr-1.5" />
-                    {media.recommendation_count}
-                </div>
-                <div className="flex items-center">
-                    <MessageCircle className="h-4 w-4 mr-1.5" />
-                    {media.comment_count}
-                </div>
-                <div className="flex space-x-2">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                        <Star className="h-4 w-4 mr-1.5 text-yellow-400" />
-                        {media.avg_rating.toFixed(1)} ({media.rating_count})
+                {/* Левая часть: Статистика */}
+                <TooltipProvider>
+                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                        <Tooltip>
+                            <TooltipTrigger className="flex items-center">
+                                <Send className="h-4 w-4 mr-1.5" />
+                                {media.recommendation_count}
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Recommend count</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger
+                                className="flex items-center"
+                                onClick={() => onComment(media)}
+                            >
+                                <MessageCircle className="h-4 w-4 mr-1.5" />
+                                {media.comment_count}
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Comments</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger
+                                className="flex items-center"
+                                onClick={() => onRate(media)}
+                            >
+                                <Star className="h-4 w-4 mr-1.5 text-yellow-500" />
+                                {media.avg_rating.toFixed(1)} (
+                                {media.rating_count})
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Avarage rate</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onRate(media)}
-                    >
-                        <Star className="h-4 w-4 mr-1.5" /> Rate
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onComment(media)}
-                    >
-                        <MessageCircle className="h-4 w-4 mr-1.5" /> Comment
-                    </Button>
+                </TooltipProvider>
+
+                {/* Правая часть: Основные действия */}
+                <div className="flex space-x-2">
                     <Button size="sm" onClick={() => onRecommend(media)}>
-                        Recommend
+                        Рекомендовать
                     </Button>
                 </div>
             </CardFooter>

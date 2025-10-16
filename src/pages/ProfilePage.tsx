@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Card,
     CardContent,
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserList } from "@/components/shared/UserList";
-import { type RecommendationDetails } from "@/types";
+import { type RecommendationDetails, type User } from "@/types";
 import { SentRecommendationList } from "@/components/shared/SentRecommendationList";
 import {
     Tooltip,
@@ -33,6 +33,7 @@ import { getRecommendations } from "@/api/recommendationApi";
 import { RecommendationCardSkeleton } from "@/components/shared/RecommendationCardSkeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useModal } from "@/hooks/useModal";
+import { toast } from "sonner";
 
 // Компонент для отображения полученных рекомендаций
 function RecommendationList({
@@ -121,6 +122,7 @@ export default function ProfilePage() {
     const { userId } = useParams<{ userId: string }>();
     const { user: currentUser } = useAuth();
     const { openModal } = useModal();
+    const queryClient = useQueryClient();
 
     const {
         data: user,
@@ -185,17 +187,73 @@ export default function ProfilePage() {
             enabled: !!currentUser && isMyProfile,
         });
 
-    // --- МУТАЦИИ (остаются без изменений) ---
     const followMutation = useMutation({
         mutationFn: followUser,
-        onSuccess: () => {
-            /* ... */
+        // Эта функция сработает ДО отправки запроса на сервер
+        onMutate: async () => {
+            // 1. Отменяем все текущие перезапросы для 'myFollowings', чтобы они не затерли наши оптимистичные данные
+            await queryClient.cancelQueries({ queryKey: ["myFollowings"] });
+
+            // 2. Сохраняем текущее состояние (предыдущий список подписок) на случай отката
+            const previousFollowings = queryClient.getQueryData<User[]>([
+                "myFollowings",
+            ]);
+
+            // 3. Оптимистично обновляем кэш: добавляем нового пользователя в список
+            queryClient.setQueryData<User[]>(["myFollowings"], (old) => {
+                if (!user) return old; // user - это данные профиля, на котором мы находимся
+                // Если старого списка нет, создаем новый. Иначе, добавляем в существующий.
+                return old ? [...old, user] : [user];
+            });
+
+            // 4. Возвращаем предыдущее состояние в контексте
+            return { previousFollowings };
+        },
+        // Если мутация провалилась, откатываемся к сохраненному состоянию
+        onError: (err, _, context) => {
+            toast.error(`Не удалось подписаться: ${err.message}`);
+            if (context?.previousFollowings) {
+                queryClient.setQueryData(
+                    ["myFollowings"],
+                    context.previousFollowings
+                );
+            }
+        },
+        // Эта функция сработает всегда после успеха или ошибки
+        onSettled: () => {
+            // 5. Делаем финальную синхронизацию с сервером, чтобы убедиться, что все консистентно
+            queryClient.invalidateQueries({ queryKey: ["myFollowings"] });
+            queryClient.invalidateQueries({ queryKey: ["followers", userId] });
         },
     });
+
     const unfollowMutation = useMutation({
         mutationFn: unfollowUser,
-        onSuccess: () => {
-            /* ... */
+        onMutate: async (unfollowedUserId) => {
+            await queryClient.cancelQueries({ queryKey: ["myFollowings"] });
+            const previousFollowings = queryClient.getQueryData<User[]>([
+                "myFollowings",
+            ]);
+
+            // Оптимистично удаляем пользователя из списка
+            queryClient.setQueryData<User[]>(["myFollowings"], (old) => {
+                return old?.filter((u) => u.user_id !== unfollowedUserId) || [];
+            });
+
+            return { previousFollowings };
+        },
+        onError: (err, _, context) => {
+            toast.error(`Не удалось отписаться: ${err.message}`);
+            if (context?.previousFollowings) {
+                queryClient.setQueryData(
+                    ["myFollowings"],
+                    context.previousFollowings
+                );
+            }
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["myFollowings"] });
+            queryClient.invalidateQueries({ queryKey: ["followers", userId] });
         },
     });
 
