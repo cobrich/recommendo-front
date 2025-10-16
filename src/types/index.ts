@@ -6,7 +6,8 @@ export interface User {
     user_id: number;
     user_name: string;
     email: string;
-    created_at: string; // ISO-строка с датой
+    created_at: string;
+    avatar_url?: string;
 }
 
 // На основе dtos/paginatedResponseDTO.go

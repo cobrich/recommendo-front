@@ -13,6 +13,7 @@ import { type AppComment, type MediaItem } from "@/types";
 import { getComments, postComment } from "@/api/mediaApi";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Link } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 interface CommentsDialogProps {
     isOpen: boolean;
@@ -81,7 +82,17 @@ export function CommentsDialog({
                                                 to={`/users/${comment.user.user_id}`}
                                                 className="hover:underline"
                                             >
-                                                {comment.user.user_name}
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarImage
+                                                        src={`http://localhost:8080${comment.user.avatar_url}`}
+                                                    />
+                                                    <AvatarFallback>
+                                                        {comment.user.user_name.substring(
+                                                            0,
+                                                            1
+                                                        )}
+                                                    </AvatarFallback>
+                                                </Avatar>
                                             </Link>
                                             <span className="text-xs text-muted-foreground font-normal ml-2">
                                                 {new Date(

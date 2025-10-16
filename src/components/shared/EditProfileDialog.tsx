@@ -1,4 +1,4 @@
-import { updateCurrentUser } from "@/api/userApi";
+import { updateCurrentUser, uploadAvatar } from "@/api/userApi";
 import { useAuth } from "@/hooks/useAuth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -8,7 +8,7 @@ import {
     DialogTitle,
 } from "@radix-ui/react-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
@@ -25,12 +25,14 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
 import { DeleteAccountSection } from "./DeleteAccountSection";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 const EditProfileSchema = z.object({
     user_name: z
         .string()
         .min(2, { message: "The name must contain more than 3 symbols." }),
 });
+
 interface EditProfileDialogProps {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
@@ -43,6 +45,7 @@ export function EditProfileDialog({
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const [isChangePasswordOpen, setChangePasswordOpen] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const form = useForm<z.infer<typeof EditProfileSchema>>({
         resolver: zodResolver(EditProfileSchema),
@@ -74,8 +77,27 @@ export function EditProfileDialog({
         },
     });
 
+    const avatarMutation = useMutation({
+        mutationFn: uploadAvatar,
+        onSuccess: () => {
+            toast.success("Аватар успешно обновлен!");
+            queryClient.invalidateQueries({
+                queryKey: ["userProfile", user?.user_id.toString()],
+            });
+            queryClient.invalidateQueries({ queryKey: ["myProfileData"] }); // Специальный ключ для AuthContext
+        },
+        onError: (error) => toast.error(`Ошибка загрузки: ${error.message}`),
+    });
+
     const onSubmit = (values: z.infer<typeof EditProfileSchema>) => {
         updateMutation.mutate(values.user_name);
+    };
+
+    const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            avatarMutation.mutate(file);
+        }
     };
 
     return (
@@ -88,6 +110,37 @@ export function EditProfileDialog({
                             Внесите изменения в ваш профиль.
                         </DialogDescription>
                     </DialogHeader>
+                    <div className="flex flex-col items-center gap-4 py-4">
+                        <Avatar
+                            className="h-24 w-24 cursor-pointer"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <AvatarImage
+                                src={`http://localhost:8080${user?.avatar_url}`}
+                                alt={user?.user_name}
+                            />
+                            <AvatarFallback>
+                                {user?.user_name.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                        </Avatar>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleAvatarChange}
+                            accept="image/png, image/jpeg"
+                            className="hidden"
+                        />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={avatarMutation.isPending}
+                        >
+                            {avatarMutation.isPending
+                                ? "Загрузка..."
+                                : "Сменить аватар"}
+                        </Button>
+                    </div>
                     <Form {...form}>
                         <form
                             onSubmit={form.handleSubmit(onSubmit)}

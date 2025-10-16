@@ -100,3 +100,16 @@ export const getFriends = async (userId: string) => {
   const { data } = await apiClient.get<PaginatedResponse<User>>(`/users/${userId}/friends`);
   return data.data;
 };
+
+export const uploadAvatar = async (file: File) => {
+    const formData = new FormData();
+    formData.append("avatar", file);
+    const { data } = await apiClient.post<{ avatar_url: string }>(
+        "/me/avatar",
+        formData,
+        {
+            headers: { "Content-Type": "multipart/form-data" },
+        }
+    );
+    return data;
+};
