@@ -101,7 +101,7 @@ export function RecommendationDialog({
         : "Новая рекомендация";
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <Dialog open={isOpen} onOpenChange={onOpenChange} modal={true}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>

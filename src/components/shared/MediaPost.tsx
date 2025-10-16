@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { type MediaItem } from "@/types";
 import {
     Card,
@@ -27,7 +28,12 @@ export function MediaPost({
         <Card>
             <CardHeader>
                 <CardTitle>
-                    {media.name} ({media.year})
+                    <Link
+                        to={`/media/${media.media_id}`}
+                        className="hover:underline"
+                    >
+                        {media.name} ({media.year})
+                    </Link>
                 </CardTitle>
                 <CardDescription>
                     {media.author} - {media.item_type}
@@ -43,6 +49,10 @@ export function MediaPost({
                 <div className="flex items-center text-sm text-muted-foreground">
                     <ThumbsUp className="h-4 w-4 mr-1.5" />
                     {media.recommendation_count}
+                </div>
+                <div className="flex items-center">
+                    <MessageCircle className="h-4 w-4 mr-1.5" />
+                    {media.comment_count}
                 </div>
                 <div className="flex space-x-2">
                     <div className="flex items-center text-sm text-muted-foreground">

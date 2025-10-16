@@ -80,7 +80,7 @@ export function ChangePasswordDialog({
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <Dialog open={isOpen} onOpenChange={onOpenChange} modal={true}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>Смена пароля</DialogTitle>

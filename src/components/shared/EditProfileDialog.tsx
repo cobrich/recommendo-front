@@ -1,18 +1,23 @@
-import { updateCurrentUser, uploadAvatar } from "@/api/userApi";
+import {
+    updateCurrentUser,
+    uploadAvatar,
+    deleteCurrentUserAvatar,
+} from "@/api/userApi";
 import { useAuth } from "@/hooks/useAuth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
+    DialogHeader,
     DialogTitle,
-} from "@radix-ui/react-dialog";
+    DialogDescription,
+    DialogFooter,
+} from "@/components/ui/dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
-import { DialogFooter, DialogHeader } from "../ui/dialog";
 import {
     Form,
     FormControl,
@@ -77,6 +82,8 @@ export function EditProfileDialog({
         },
     });
 
+    console.log("User object in EditProfileDialog:", user);
+
     const avatarMutation = useMutation({
         mutationFn: uploadAvatar,
         onSuccess: () => {
@@ -85,9 +92,22 @@ export function EditProfileDialog({
             queryClient.invalidateQueries({
                 queryKey: ["userProfile", user?.user_id.toString()],
             });
-            queryClient.invalidateQueries({ queryKey: ["myProfileData"] }); // Специальный ключ для AuthContext
+            queryClient.invalidateQueries({ queryKey: ["myProfileData"] });
         },
         onError: (error) => toast.error(`Ошибка загрузки: ${error.message}`),
+    });
+
+    const deleteAvatarMutation = useMutation({
+        mutationFn: deleteCurrentUserAvatar,
+        onSuccess: () => {
+            toast.success("Аватар успешно удален.");
+            refetchUser();
+            queryClient.invalidateQueries({
+                queryKey: ["userProfile", user?.user_id.toString()],
+            });
+        },
+        onError: (error) =>
+            toast.error(`Не удалось удалить аватар: ${error.message}`),
     });
 
     const onSubmit = (values: z.infer<typeof EditProfileSchema>) => {
@@ -103,12 +123,12 @@ export function EditProfileDialog({
 
     return (
         <>
-            <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <Dialog open={isOpen} onOpenChange={onOpenChange} modal={true}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
-                        <DialogTitle>Редактировать профиль</DialogTitle>
+                        <DialogTitle>Edit Profile</DialogTitle>
                         <DialogDescription>
-                            Внесите изменения в ваш профиль.
+                            Edit Your Profile.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex flex-col items-center gap-4 py-4">
@@ -117,7 +137,11 @@ export function EditProfileDialog({
                             onClick={() => fileInputRef.current?.click()}
                         >
                             <AvatarImage
-                                src={`http://localhost:8080${user?.avatar_url}`}
+                                src={
+                                    user?.avatar_url
+                                        ? `http://localhost:8080${user.avatar_url}`
+                                        : undefined
+                                }
                                 alt={user?.user_name}
                             />
                             <AvatarFallback>
@@ -138,9 +162,21 @@ export function EditProfileDialog({
                             disabled={avatarMutation.isPending}
                         >
                             {avatarMutation.isPending
-                                ? "Загрузка..."
-                                : "Сменить аватар"}
+                                ? "Loading..."
+                                : "Change avatar"}
                         </Button>
+                        {user?.avatar_url && (
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => deleteAvatarMutation.mutate()}
+                                disabled={deleteAvatarMutation.isPending}
+                            >
+                                {deleteAvatarMutation.isPending
+                                    ? "Удаление..."
+                                    : "Удалить"}
+                            </Button>
+                        )}
                     </div>
                     <Form {...form}>
                         <form
@@ -152,10 +188,10 @@ export function EditProfileDialog({
                                 name="user_name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Имя пользователя</FormLabel>
+                                        <FormLabel>User name</FormLabel>
                                         <FormControl>
                                             <Input
-                                                placeholder="Ваше имя"
+                                                placeholder="Your name"
                                                 {...field}
                                             />
                                         </FormControl>
@@ -179,8 +215,8 @@ export function EditProfileDialog({
                                     disabled={updateMutation.isPending}
                                 >
                                     {updateMutation.isPending
-                                        ? "Сохранение..."
-                                        : "Сохранить изменения"}
+                                        ? "Saving..."
+                                        : "Save changes"}
                                 </Button>
                             </DialogFooter>
                         </form>

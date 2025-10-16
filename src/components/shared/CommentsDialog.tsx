@@ -56,7 +56,7 @@ export function CommentsDialog({
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <Dialog open={isOpen} onOpenChange={onOpenChange} modal={true}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Комментарии к: {media.name}</DialogTitle>

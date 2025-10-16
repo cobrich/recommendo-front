@@ -36,3 +36,8 @@ export const postComment = async ({
     ); // <-- Изменили тип
     return data;
 };
+
+export const getMediaById = async (mediaId: string) => {
+    const { data } = await apiClient.get<MediaItem>(`/media/${mediaId}`);
+    return data;
+};

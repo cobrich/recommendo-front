@@ -113,3 +113,7 @@ export const uploadAvatar = async (file: File) => {
     );
     return data;
 };
+
+export const deleteCurrentUserAvatar = async () => {
+    await apiClient.delete("/me/avatar");
+};
