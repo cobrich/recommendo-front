@@ -1,23 +1,7 @@
 import { ActivityFeed } from "@/components/shared/ActivityFeed";
 import { SuggestedUsers } from "@/components/shared/SuggestedUsers";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { CenterContent } from "@/components/shared/CenterContent";
-
-// Временные заглушки для левой и центральной колонок
-function LeftSidebar() {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Виджет</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground">
-                    Здесь будет квиз или полезная информация.
-                </p>
-            </CardContent>
-        </Card>
-    );
-}
+import { AiWidget } from "@/components/shared/AiWidget";
 
 export default function HomePage() {
     return (
@@ -25,7 +9,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Левая колонка (видна на больших экранах) */}
             <aside className="hidden lg:block lg:col-span-3">
-                <LeftSidebar />
+                <AiWidget />
             </aside>
 
             {/* Центральная колонка */}

@@ -87,3 +87,11 @@ export interface AppComment {
     created_at: string;
     user: User;
 }
+
+export interface MediaGuess {
+    name: string;
+    year: number;
+    type: string;
+    confidence: "high" | "medium" | "low";
+    reason: string;
+}
