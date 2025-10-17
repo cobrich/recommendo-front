@@ -9,6 +9,7 @@ import { type AIFindResult, type MediaGuess } from "@/types";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { createMedia } from "@/api/mediaApi";
+import type { AxiosError } from "axios";
 
 export function AiWidget() {
     const [prompt, setPrompt] = useState("");
@@ -53,8 +54,19 @@ export function AiWidget() {
             // Устанавливаем данные в кэш с новым ключом
             queryClient.setQueryData(["aiFindResults"], data);
         },
-        onError: (error) => {
-            console.error(error);
+        onError: (error: AxiosError) => {
+            let errorMessage = "Не удалось добавить медиа.";
+            if (error.response?.data) {
+                // AxiosError.response.data может быть строкой или объектом
+                const errorData = error.response.data as
+                    | { error?: string }
+                    | string;
+                errorMessage =
+                    typeof errorData === "string"
+                        ? errorData
+                        : errorData.error || errorMessage;
+            }
+            toast.error(errorMessage);
         },
     });
 
