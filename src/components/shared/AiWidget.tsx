@@ -1,25 +1,31 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { findMediaWithAI } from "@/api/aiApi";
 import { Bot, Loader2, PlusCircle, CheckCircle } from "lucide-react";
-import { type AIFindResult } from "@/types";
+import { type AIFindResult, type MediaGuess } from "@/types";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { createMedia } from "@/api/mediaApi";
 
 export function AiWidget() {
     const [prompt, setPrompt] = useState("");
     const [results, setResults] = useState<AIFindResult[]>([]);
+    const queryClient = useQueryClient();
 
-    const aiMutation = useMutation({
-        mutationFn: findMediaWithAI,
-        onSuccess: (data) => {
-            setResults(data);
+    const addMediaMutation = useMutation({
+        mutationFn: createMedia,
+        onSuccess: (newMedia) => {
+            toast.success(`"${newMedia.name}" успешно добавлен в базу!`);
+            // Обновляем список "Топ медиа", чтобы он мог там появиться
+            queryClient.invalidateQueries({ queryKey: ["topMedia"] });
+            // Обновляем результаты поиска ИИ, чтобы кнопка "Добавить" сменилась на "В базе"
+            queryClient.invalidateQueries({ queryKey: ["aiFindResults"] }); // Используем новый ключ
         },
-        onError: (error) => {
-            console.error(error);
-        },
+        onError: (error) =>
+            toast.error(`Не удалось добавить: ${error.message}`),
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -29,6 +35,28 @@ export function AiWidget() {
             aiMutation.mutate(prompt);
         }
     };
+
+    const handleAddMedia = (guess: MediaGuess) => {
+        addMediaMutation.mutate({
+            name: guess.name,
+            year: guess.year,
+            author: guess.author,
+            tags: [guess.type], // Пока берем только один тип от ИИ
+        });
+    };
+
+    // Обновляем useQuery для aiMutation
+    const aiMutation = useMutation({
+        mutationFn: findMediaWithAI,
+        onSuccess: (data) => {
+            setResults(data);
+            // Устанавливаем данные в кэш с новым ключом
+            queryClient.setQueryData(["aiFindResults"], data);
+        },
+        onError: (error) => {
+            console.error(error);
+        },
+    });
 
     return (
         <Card>
@@ -84,7 +112,14 @@ export function AiWidget() {
                                         </Link>
                                     </Button>
                                 ) : (
-                                    <Button variant="secondary" size="sm">
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() =>
+                                            handleAddMedia(result.guess)
+                                        }
+                                        disabled={addMediaMutation.isPending}
+                                    >
                                         <PlusCircle className="h-4 w-4 mr-2" />
                                         Добавить
                                     </Button>

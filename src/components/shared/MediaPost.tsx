@@ -43,7 +43,8 @@ export function MediaPost({
                     </Link>
                 </CardTitle>
                 <CardDescription>
-                    {media.author} - {media.item_type}
+                    {media.author} -{" "}
+                    {media.tags.map((tag) => tag.name).join(", ")}
                 </CardDescription>
             </CardHeader>
             <CardContent>

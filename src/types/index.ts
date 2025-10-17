@@ -25,11 +25,15 @@ export interface TokenResponse {
 }
 
 // На основе models/media_item.go
-export type MediaType = "film" | "anime" | "book" | "game" | "series";
+// export type MediaType = "film" | "anime" | "book" | "game" | "series";
+export interface Tag {
+    tag_id: number;
+    name: string;
+}
 
 export interface MediaItem {
     media_id: number;
-    item_type: MediaType;
+    // item_type: MediaType;
     name: string;
     year: number;
     author: string;
@@ -39,6 +43,7 @@ export interface MediaItem {
     avg_rating: number;
     rating_count: number;
     comment_count: number;
+    tags: Tag[];
 }
 
 // На основе models/recommendation_details.go
@@ -94,6 +99,7 @@ export interface MediaGuess {
     type: string;
     confidence: "high" | "medium" | "low";
     reason: string;
+    author: string;
 }
 
 export interface AIFindResult {

@@ -42,7 +42,8 @@ export default function MediaDetailPage() {
                             {media.name} ({media.year})
                         </CardTitle>
                         <CardDescription>
-                            {media.author} - {media.item_type}
+                            {media.author} -{" "}
+                            {media.tags.map((tag) => tag.name).join(", ")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

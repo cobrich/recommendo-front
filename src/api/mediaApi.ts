@@ -41,3 +41,13 @@ export const getMediaById = async (mediaId: string) => {
     const { data } = await apiClient.get<MediaItem>(`/media/${mediaId}`);
     return data;
 };
+
+export const createMedia = async (mediaData: {
+    name: string;
+    year: number;
+    author: string;
+    tags: string[];
+}) => {
+    const { data } = await apiClient.post<MediaItem>("/media", mediaData);
+    return data;
+};
