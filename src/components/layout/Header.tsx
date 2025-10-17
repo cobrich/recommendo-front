@@ -27,7 +27,7 @@ export function Header() {
                         to="/community"
                         className="transition-colors hover:text-foreground/80 text-foreground/60"
                     >
-                        Сообщество
+                        Community
                     </Link>
                 </nav>
                 <div className="flex flex-1 items-center justify-end space-x-4">
