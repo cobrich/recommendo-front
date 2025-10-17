@@ -4,12 +4,13 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { findMediaWithAI } from "@/api/aiApi";
-import { Bot, Loader2 } from "lucide-react";
-import { type MediaGuess } from "@/types";
+import { Bot, Loader2, PlusCircle, CheckCircle } from "lucide-react";
+import { type AIFindResult } from "@/types";
+import { Link } from "react-router-dom";
 
 export function AiWidget() {
     const [prompt, setPrompt] = useState("");
-    const [results, setResults] = useState<MediaGuess[]>([]);
+    const [results, setResults] = useState<AIFindResult[]>([]);
 
     const aiMutation = useMutation({
         mutationFn: findMediaWithAI,
@@ -17,7 +18,6 @@ export function AiWidget() {
             setResults(data);
         },
         onError: (error) => {
-            // Здесь можно добавить toast с ошибкой
             console.error(error);
         },
     });
@@ -25,7 +25,7 @@ export function AiWidget() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (prompt.trim()) {
-            setResults([]); // Очищаем старые результаты
+            setResults([]);
             aiMutation.mutate(prompt);
         }
     };
@@ -41,7 +41,7 @@ export function AiWidget() {
             <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <Textarea
-                        placeholder="Опишите фильм, который ищете... Например, 'фильм про парня, который узнал, что живет в симуляции'"
+                        placeholder="Опишите фильм, который ищете..."
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         rows={4}
@@ -61,17 +61,34 @@ export function AiWidget() {
                 {results.length > 0 && (
                     <div className="mt-6 space-y-4">
                         <h4 className="font-semibold">Я думаю, вы ищете:</h4>
-                        {results.map((guess, index) => (
+                        {results.map((result, index) => (
                             <div
                                 key={index}
-                                className="p-3 border rounded-lg bg-muted/50"
+                                className="p-3 border rounded-lg bg-muted/50 flex justify-between items-center"
                             >
-                                <p className="font-bold">
-                                    {guess.name} ({guess.year})
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                    {guess.reason}
-                                </p>
+                                <div>
+                                    <p className="font-bold">
+                                        {result.guess.name} ({result.guess.year}
+                                        )
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {result.guess.reason}
+                                    </p>
+                                </div>
+
+                                {result.is_in_database ? (
+                                    <Button variant="ghost" size="sm" asChild>
+                                        <Link to={`/media/${result.media_id}`}>
+                                            <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                                            В базе
+                                        </Link>
+                                    </Button>
+                                ) : (
+                                    <Button variant="secondary" size="sm">
+                                        <PlusCircle className="h-4 w-4 mr-2" />
+                                        Добавить
+                                    </Button>
+                                )}
                             </div>
                         ))}
                     </div>

@@ -95,3 +95,9 @@ export interface MediaGuess {
     confidence: "high" | "medium" | "low";
     reason: string;
 }
+
+export interface AIFindResult {
+    guess: MediaGuess;
+    is_in_database: boolean;
+    media_id?: number;
+}

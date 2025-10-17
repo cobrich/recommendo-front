@@ -1,8 +1,9 @@
 import apiClient from ".";
-import { type MediaGuess } from "@/types";
+import { type AIFindResult } from "@/types";
 
 export const findMediaWithAI = async (description: string) => {
-    const { data } = await apiClient.post<MediaGuess[]>("/ai/find-media", {
+    // Указываем новый тип ответа
+    const { data } = await apiClient.post<AIFindResult[]>("/ai/find-media", {
         description,
     });
     return data;
